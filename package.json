@@ -7,7 +7,8 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "seed-admin": "node ./seeds/seed-admin.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
