@@ -16,6 +16,7 @@ This repository is an early backend implementation.
 - Automatically confirm kids created by an admin.
 - Create an initial admin account with a seed script.
 - Validate incoming kid data with Joi.
+- Handle errors centrally through an Express error-handling middleware that returns consistent JSON responses.
 
 ### Planned
 
@@ -23,7 +24,7 @@ This repository is an early backend implementation.
 - Store active or requested calls in `public.calls`.
 - Store call history in `public.call_logs`.
 - Expose admin endpoints for listing and confirming kids.
-- Add automated tests and centralized error handling.
+- Add automated tests.
 
 The code contains an empty `callKid` controller and an unrouted `getAllKids` controller as placeholders for some of this work.
 
@@ -78,8 +79,9 @@ Only `public.kids` is used by the current API. `public.calls` and `public.call_l
 4. The middleware adds the user's `id`, `email`, and application `role` to `req.user`.
 5. The kids router validates the request and runs the corresponding controller.
 6. The controller accesses Supabase using the server-side service key.
+7. If a validator or controller throws an `AppError`, Express 5 forwards it to the central error handler, which sends a consistent JSON response.
 
-All routes are protected because the authentication middleware is registered before the API router in `app.js`.
+All routes are protected because the authentication middleware is registered before the API router in `app.js`. The error handler is registered after the router, so it can catch errors thrown anywhere downstream.
 
 ## Project structure
 
@@ -91,10 +93,12 @@ All routes are protected because the authentication middleware is registered bef
 |   |-- urls.js                    # /api/kids route definitions
 |   `-- validators.js              # Joi request validation
 |-- middlewares/
+|   |-- error-handler.js           # Central Express error-handling middleware
 |   `-- protected-route.js         # Bearer-token authentication middleware
 |-- seeds/
 |   `-- seed-admin.js              # Creates the initial Supabase admin user
 |-- utils/
+|   |-- app-error.js               # AppError class for application errors
 |   |-- create-supabase-client.js  # Shared privileged Supabase client
 |   `-- token-verification.js      # JWT and JWKS verification
 |-- package.json
@@ -208,11 +212,45 @@ https://<SUPABASE_PROJECT_ID>.supabase.co/auth/v1/.well-known/jwks.json
 
 The verifier expects ES256 tokens and reads the application role from `app_metadata.role`. The seed script assigns the `admin` role to the initial admin account. Regular authenticated users may have no explicit role.
 
+## Error handling
+
+Errors are managed in one place rather than being formatted at each call site.
+
+- `utils/app-error.js` defines `AppError`, a subclass of `Error` with a `message`, a `statusCode` (default `500`), and optional `details`. Validators and controllers signal failures by throwing `new AppError(message, statusCode, details)` instead of writing a response directly.
+- `middlewares/error-handler.js` is the central Express error handler. It is registered last in `app.js`, after the kids router, so it can catch errors thrown anywhere downstream. Because the project runs Express 5, errors thrown or rejected inside `async` route handlers are forwarded to it automatically — no per-controller `try/catch` is required.
+
+The handler builds the response as follows:
+
+- The HTTP status comes from `err.statusCode`, defaulting to `500`.
+- For server errors (`statusCode >= 500`), the `error` field is masked to `"Internal Server Error"` so internal messages are not leaked. For client errors (4xx), the actual `err.message` is returned.
+- When the error carries `details`, they are included under a `details` field.
+- If a response has already been sent (`res.headersSent`), the error is delegated to Express's default handler.
+
+Responses use the shape `{ "error": string, "details"?: unknown }`.
+
+A failed validation (`400`) returns the Joi messages:
+
+```json
+{
+  "error": "\"full_name\" length must be at least 2 characters long",
+  "details": { "...": "the underlying Joi error" }
+}
+```
+
+A Supabase failure (`500`) masks the message but still surfaces the originating error in `details`:
+
+```json
+{
+  "error": "Internal Server Error",
+  "details": { "...": "the underlying Supabase error" }
+}
+```
+
 ## Development notes
 
 - There is no public health-check route; the global authentication middleware protects every request.
 - Database migrations are not currently included, so the Supabase schema must be created separately.
-- The API currently returns raw Supabase errors for database failures.
+- Database failures flow through the central error handler as structured JSON. The 5xx message is masked to `"Internal Server Error"`, but the originating Supabase error is still surfaced in the `details` field.
 - No test or lint command is configured yet.
 
 These limitations are useful starting points for the next development phase, especially before exposing the service outside a controlled environment.
