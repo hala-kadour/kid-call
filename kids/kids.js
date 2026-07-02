@@ -90,3 +90,24 @@ export async function callKid(req, res, next) {
     return res.sendStatus(200);
 
 }
+
+
+export async function confirmKid(req, res, next){
+    const kid_id = req.params.id;
+
+    if(req.user.role !== 'admin') {
+        throw new AppError("You are not allowed to provide confimation", 403);
+    }
+
+    const client = await createSupabaseClient();
+
+    const {error} = await client.from('kids').update({
+        is_confirmed : true
+    }).eq("id", kid_id);
+
+    if(error){
+        throw new AppError("Could not confirm kid", 500, error);
+    }
+
+    return res.sendStatus(200);
+}
