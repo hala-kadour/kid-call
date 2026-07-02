@@ -53,7 +53,7 @@ export async function getAllKids(req, res, next) {
 }
 
 export async function callKid(req, res, next) {
-    const user_id = req.body.user_id ?? req.user.id;
+    const user_id = req.user.id;
     const kid_id = req.params.id;
 
     const client = await createSupabaseClient();
