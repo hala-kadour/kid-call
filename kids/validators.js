@@ -43,6 +43,14 @@ export function validateGetKidsOf(req, res, next){
     next();
 }
 
+export function validateGetAllKids(req, res, next){
+    /**
+     * There is no validate for now
+     * We will add a validate when we have params
+     */
+    next();
+}
+
 export function validateCall(req, res, next){
     const kid_id = req.params.id;
     const schema = Joi.object({

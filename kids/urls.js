@@ -1,10 +1,12 @@
 import express from 'express';
-import { addKid, getKidsOf, callKid , confirmKid} from './kids.js';
-import { validateAddingKid, validateGetKidsOf, validateCall , validateConfirmKid} from './validators.js';
+import { addKid, getKidsOf, getAllKids, callKid, confirmKid } from './kids.js';
+import { validateAddingKid, validateGetKidsOf, validateGetAllKids, validateCall, validateConfirmKid } from './validators.js';
 
 export const router = express.Router();
 
 router.post('/', validateAddingKid, addKid);
+
+router.get('/admin/all', validateGetAllKids, getAllKids);
 
 router.patch('/:id/confirm', validateConfirmKid, confirmKid);
 

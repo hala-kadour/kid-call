@@ -38,7 +38,7 @@ export async function getKidsOf(req, res, next) {
 
 export async function getAllKids(req, res, next) {
     if(req.user.role !== 'admin') {
-        throw new AppError("You are not allowed to access this resource", 403, error);
+        throw new AppError("You are not allowed to access this resource", 403);
     }
 
     const client = await createSupabaseClient();
@@ -53,7 +53,7 @@ export async function getAllKids(req, res, next) {
 }
 
 export async function callKid(req, res, next) {
-    const user_id = req.body.user_id ?? req.user.id;
+    const user_id = req.user.id;
     const kid_id = req.params.id;
 
     const client = await createSupabaseClient();
@@ -64,25 +64,32 @@ export async function callKid(req, res, next) {
     if(kidError){
         throw new AppError("Could not find the kid", 404, kidError);
     }
+
     // And he has to be confirmed too
     if(!kidData.is_confirmed){
-        throw new AppError("The kid is not confirmed", 400, error);
+        throw new AppError("The kid is not confirmed", 400);
     }
-    // Then add the call to the public.calls & public.call_logs
+
+   // Ownership Check so not any authenticated user can call any confirmed kid
+    if (kidData.user_id !== req.user.id && req.user.role !== 'admin') {
+        throw new AppError("You are not allowed to call this kid", 403);
+    }
+
+    // Then add the call to the public.calls
     const {error: errorCall} = await client.from('calls').insert({
         user_id,
         kid_id
     });
 
+    if(errorCall){
+       throw new AppError("Could not call the kid", 500, errorCall);
+   }
+
+   // and public.call_logs
     const {error: errorLogs} = await client.from('call_logs').insert({
         user_id,
         kid_id
     });
-
-     if(errorCall){
-        throw new AppError("Could not call the kid", 500, error);
-    }
-
     if(errorLogs){
         throw new AppError("Could not log the call", 500, errorLogs);
     }
@@ -96,7 +103,7 @@ export async function confirmKid(req, res, next){
     const kid_id = req.params.id;
 
     if(req.user.role !== 'admin') {
-        throw new AppError("You are not allowed to provide confimation", 403);
+        throw new AppError("You are not allowed to provide confirmation", 403);
     }
 
     const client = await createSupabaseClient();
