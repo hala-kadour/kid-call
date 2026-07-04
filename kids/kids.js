@@ -85,13 +85,7 @@ export async function callKid(req, res, next) {
     await createCall(client, user_id, parsedKidId);
 
     // and public.call_logs
-    const { error: errorLogs } = await client.from('call_logs').insert({
-        user_id,
-        kid_id
-    });
-    if (errorLogs) {
-        throw new AppError("Could not log the call", 500, errorLogs);
-    }
+    await recordCallHistory(client, user_id, parsedKidId);
 
     return res.sendStatus(200);
 }
@@ -126,5 +120,16 @@ async function createCall(client, user_id, kid_id) {
 
     if (errorCall) {
         throw new AppError("Could not call the kid", 500, errorCall);
+    }
+}
+
+// for recording call history
+async function recordCallHistory(client, user_id, kid_id) {
+    const { error: errorLogs } = await client.from('call_logs').insert({
+        user_id,
+        kid_id
+    });
+    if (errorLogs) {
+        throw new AppError("Could not log the call", 500, errorLogs);
     }
 }
