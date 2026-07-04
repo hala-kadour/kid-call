@@ -87,7 +87,7 @@ export async function callKid(req, res, next) {
     // and add public.call_logs
     await recordCallHistory(client, user_id, parsedKidId);
 
-    return res.sendStatus(200);
+    return res.status(200).send("The kid was called successfully");
 }
 
 
@@ -108,7 +108,7 @@ export async function confirmKid(req, res, next) {
         throw new AppError("Could not confirm kid", 500, error);
     }
 
-    return res.sendStatus(200);
+    return res.status(200).send("The kid was confirmed successfully");
 }
 
 // for creating a call in public.calls
