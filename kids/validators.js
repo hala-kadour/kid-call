@@ -68,3 +68,22 @@ export function validateCall(req, res, next){
 
     next();
 }
+
+export function validateConfirmKid(req, res, next){
+    const id = req.params.id;
+
+    const schema = Joi.object({
+        id: Joi.string().required()
+    });
+
+    const {error} = schema.validate({
+        id
+    });
+
+    if(error){
+        const messages = error.details.map(d => d.message);
+        throw new AppError(messages.join(','), 400, error);
+    }
+
+    next();
+}
