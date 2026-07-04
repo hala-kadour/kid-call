@@ -1,7 +1,7 @@
 import Joi from "joi";
 import AppError from "../utils/app-error.js";
 
-export function validateAddingKid(req, res, next){
+export function validateAddingKid(req, res, next) {
     const full_name = req.body.full_name;
     const classroom = req.body.classroom;
 
@@ -10,12 +10,12 @@ export function validateAddingKid(req, res, next){
         classroom: Joi.string().min(2).max(3).required()
     });
 
-    const {error} = schema.validate({
+    const { error } = schema.validate({
         full_name,
         classroom
     });
 
-    if(error){
+    if (error) {
         const messages = error.details.map(d => d.message);
         console.log(messages);
         throw new AppError(messages.join(','), 400, error);
@@ -24,18 +24,18 @@ export function validateAddingKid(req, res, next){
     next();
 }
 
-export function validateGetKidsOf(req, res, next){
+export function validateGetKidsOf(req, res, next) {
     const user_id = req.params.id;
 
     const schema = Joi.object({
         user_id: Joi.string().required()
     });
 
-    const {error} = schema.validate({
+    const { error } = schema.validate({
         user_id
     });
 
-    if(error){
+    if (error) {
         const messages = error.details.map(d => d.message);
         throw new AppError(messages.join(','), 400, error);
     }
@@ -43,7 +43,7 @@ export function validateGetKidsOf(req, res, next){
     next();
 }
 
-export function validateGetAllKids(req, res, next){
+export function validateGetAllKids(req, res, next) {
     /**
      * There is no validate for now
      * We will add a validate when we have params
@@ -51,17 +51,17 @@ export function validateGetAllKids(req, res, next){
     next();
 }
 
-export function validateCall(req, res, next){
+export function validateCall(req, res, next) {
     const kid_id = req.params.id;
     const schema = Joi.object({
         kid_id: Joi.string().required()
     });
 
-    const {error} = schema.validate({
+    const { error } = schema.validate({
         kid_id
     });
 
-    if(error){
+    if (error) {
         const messages = error.details.map(d => d.message);
         throw new AppError(messages.join(','), 400, error);
     }
@@ -69,18 +69,18 @@ export function validateCall(req, res, next){
     next();
 }
 
-export function validateConfirmKid(req, res, next){
+export function validateConfirmKid(req, res, next) {
     const id = req.params.id;
 
     const schema = Joi.object({
         id: Joi.string().required()
     });
 
-    const {error} = schema.validate({
+    const { error } = schema.validate({
         id
     });
 
-    if(error){
+    if (error) {
         const messages = error.details.map(d => d.message);
         throw new AppError(messages.join(','), 400, error);
     }
